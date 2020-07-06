@@ -27,6 +27,7 @@ main(int argc, char** argv)
     int tag_inicio      = 1;
     int tag_maior       = 2;
     int tag_ordenado    = 3;
+    int tag_feedback    = 4;
     int tag_fim         = 9;
 
     MPI_Init(&argc, &argv);
@@ -85,9 +86,22 @@ main(int argc, char** argv)
         }else if(status.MPI_TAG == tag_maior){
 
             if(my_rank > 0){
-                if(recebido > vetor[ini_vetor])
-                    // Está ordenado com o da esquerda
-                    pronto = 1;
+                if(recebido > vetor[ini_vetor]) {
+
+                    // Está ordenado com o da esquerda, manda broadcast positivo
+                    MPI_Bcast(1, 1, MPI_INT, tag_feedback, MPI_COMM_WORLD);
+                    //pronto = 1;
+                } else {
+                    // Nao esta ordenado com o da esquerda, manda broadcast negativo
+                    MPI_Bcast(2, 1, MPI_INT, tag_feedback, MPI_COMM_WORLD);
+                }
+            }
+        }else if(status.MPI_TAG == tag_feedback){
+            int i;
+            int positv = 0, negatv = 0;
+            for (i = 0; i < np-2; i++) {
+                // ~~~~ 
+                reveive
             }
         }
     }
