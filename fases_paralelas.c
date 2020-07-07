@@ -1,11 +1,13 @@
 #include <stdio.h>
+#include <stdlib.h>
 #include "mpi.h"
 
 
 main(int argc, char** argv)
 { 
+    printf("LA NO COMECAO!");
     /* Parametros */
-    int tam_vet = 50;   /* Tamanho TOTAL do VETOR  ---- Multiplo da quantidade de processos <- LEMBRAR ! */
+    int tam_vet = 10000;   /* Tamanho TOTAL do VETOR  ---- Multiplo da quantidade de processos <- LEMBRAR ! */
 
     /* Variaveis */
     int my_rank;        /* Identificador do processo */
@@ -39,7 +41,9 @@ main(int argc, char** argv)
 
     tam_part = tam_vet/np;
 
+    printf("aNTES DO MY 0");
     if (my_rank == 0){  
+        printf("Comecando a ordenacao!");
         vetor = malloc(tam_vet*sizeof(int));
 
         for (i=0 ; i<tam_vet; i++)
@@ -58,7 +62,7 @@ main(int argc, char** argv)
 
     fim_vetor = ((my_rank + 1) * tam_part) -1;
     ini_vetor = (fim_vetor+1) - tam_part;
-
+    ordenado = 0;
     while(ordenado == 0){
         
         MPI_Recv(recebido, 1, MPI_INT, my_rank, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
@@ -83,7 +87,7 @@ main(int argc, char** argv)
             }
         
             if(my_rank < (np-1)) // Manda o último número... 
-                MPI_Send(vetor[fim_vetor],1,MPI_INT,(my_rank+1),tag_maior,MPI_COMM_WORLD);
+                MPI_Send(&vetor[fim_vetor],1,MPI_INT,(my_rank+1),tag_maior,MPI_COMM_WORLD);
 
         }else if(status.MPI_TAG == tag_maior){
 
@@ -103,7 +107,7 @@ main(int argc, char** argv)
             int positv = 0, negatv = 0;
             if(recebido == 1) positv++;
             else negatv++;
-            
+
             if(((negatv + positv) == np)){ // Se todas as mensagens CHEGARAM !
                 if(negatv > 0){
                     // entao teve um erro
@@ -112,7 +116,7 @@ main(int argc, char** argv)
                     int aux_lim_vizinho, aux_meu_lim;
                     aux_meu_lim = ((ini_vetor) + (tam_part/10));
                     aux_lim_vizinho = ((ini_vetor - 1) - (tam_part/10));
-                    int[(tam_part/10)] vet_aux;
+                    int vet_aux[(tam_part/10)];
                     // Faco minha copia
                     for(i = ini_vetor; i < aux_meu_lim; i++)
                         vet_aux[i] = vetor[i];
