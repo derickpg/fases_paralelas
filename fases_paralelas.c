@@ -5,7 +5,7 @@
 main(int argc, char** argv)
 { 
     /* Parametros */
-    int tam_vet = 50;   /* Tamanho TOTAL do VETOR */
+    int tam_vet = 50;   /* Tamanho TOTAL do VETOR  ---- Multiplo da quantidade de processos <- LEMBRAR ! */
 
     /* Variaveis */
     int my_rank;        /* Identificador do processo */
@@ -21,6 +21,7 @@ main(int argc, char** argv)
     int ordenado = 0;   /* 0 = nao ordenado  - 1 = ordenado */
     int recebido;
     int pronto = 0; 
+    int flag_erro = 0; /* 0 - sem erros ; 1 - com erros (Flag que indica que se o processo teve um erro de ordenação com o vizinho )*/
     MPI_Status status;  /* Status de retorno */
 
     /* TAGS */
@@ -28,6 +29,7 @@ main(int argc, char** argv)
     int tag_maior       = 2;
     int tag_ordenado    = 3;
     int tag_feedback    = 4;
+    int tag_erro        = 5;
     int tag_fim         = 9;
 
     MPI_Init(&argc, &argv);
@@ -54,14 +56,14 @@ main(int argc, char** argv)
     if(my_rank != 0)
         MPI_Recv(vetor, tam_vet, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-    fim_vetor = (my_rank + 1) * tam_part;
-    ini_vetor = fim_vetor - tam_part;
+    fim_vetor = ((my_rank + 1) * tam_part) -1;
+    ini_vetor = (fim_vetor+1) - tam_part;
 
     while(ordenado == 0){
+        
+        MPI_Recv(recebido, 1, MPI_INT, my_rank, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
-        MPI_Recv(recebido, 1, MPI_INT, (my_rank-1), MPI_ANY_TAG, MPI_COMM_WORLD, &status);
-
-        if(status.MPI_TAG == tag_inicio){
+        if((status.MPI_TAG == tag_inicio) || (status.MPI_TAG = tag_erro) || (flag_erro == 1)){
 
             // BS 
             int c=ini_vetor, d, troca, trocou =1;
@@ -80,44 +82,68 @@ main(int argc, char** argv)
                 c++;
             }
         
-            if(my_rank < (np-1))
-                MPI_Send(vetor[fim_vetor-1],1,MPI_INT,(my_rank+1),tag_maior,MPI_COMM_WORLD);
+            if(my_rank < (np-1)) // Manda o último número... 
+                MPI_Send(vetor[fim_vetor],1,MPI_INT,(my_rank+1),tag_maior,MPI_COMM_WORLD);
 
         }else if(status.MPI_TAG == tag_maior){
 
-            if(my_rank > 0){
-                if(recebido > vetor[ini_vetor]) {
+            if(my_rank > 0){   
+                flag_erro = 0;
+                if(recebido < vetor[ini_vetor]) {
 
                     // Está ordenado com o da esquerda, manda broadcast positivo
                     MPI_Bcast(1, 1, MPI_INT, tag_feedback, MPI_COMM_WORLD);
-                    //pronto = 1;
                 } else {
                     // Nao esta ordenado com o da esquerda, manda broadcast negativo
                     MPI_Bcast(2, 1, MPI_INT, tag_feedback, MPI_COMM_WORLD);
+                    flag_erro = 1;
                 }
             }
         }else if(status.MPI_TAG == tag_feedback){
-            int i;
             int positv = 0, negatv = 0;
-            for (i = 0; i < np-2; i++) {
-                // ~~~~ 
-                reveive
+            if(recebido == 1) positv++;
+            else negatv++;
+            
+            if(((negatv + positv) == np)){ // Se todas as mensagens CHEGARAM !
+                if(negatv > 0){
+                    // entao teve um erro
+                    // Troca pedaço do vetor com o vizinho
+                    int i_aux;
+                    int aux_lim_vizinho, aux_meu_lim;
+                    aux_meu_lim = ((ini_vetor) + (tam_part/10));
+                    aux_lim_vizinho = ((ini_vetor - 1) - (tam_part/10));
+                    int[(tam_part/10)] vet_aux;
+                    // Faco minha copia
+                    for(i = ini_vetor; i < aux_meu_lim; i++)
+                        vet_aux[i] = vetor[i];
+                    // Pego os dados do vizinhos (my_rank - 1)
+                    i_aux = ini_vetor;
+                    for(i = aux_lim_vizinho; i < (ini_vetor); i++){
+                        vetor[i_aux] = vetor[i];
+                        i_aux++;
+                    }
+                    // Manda meus dados de Copia para o vizinho
+                    i_aux = aux_lim_vizinho;
+                    for(i = 0; i < (tam_part/10);i++){
+                        vetor[i_aux] = vet_aux[i];
+                        i_aux++;
+                    }
+                    // Avisa o vizinho que ele tem que ordenar novamente por que deu erro
+                    MPI_Send(1,1,MPI_INT,(my_rank -1), tag_erro, MPI_COMM_WORLD);
+                }else{
+                    // tudo certo pode terminar!
+                    ordenado = 1;
+                    if(my_rank != 0){
+                        MPI_Finalize();
+                        return 0;
+                    }
+                }
             }
         }
     }
 
-    
-
-
-
-    
-
 
     if(my_rank == 0){
-        int aux;
-        for(i = 0; i < np; i++)
-            MPI_Recv(aux,1,MPI_INT,i,MPI_ANY_TAG,MPI_COMM_WORLD, &status);
-            aux = status.MPI_TAG;
         // Fim do Tempo
 		tf = MPI_Wtime();
 		double total_time;
@@ -125,9 +151,6 @@ main(int argc, char** argv)
 		printf("\n TEMPO TOTAL = %f \n", total_time);
         MPI_Finalize();
         return 0;
-    }else
-    {
-        MPI_Send(0,0,MPI_INT,0,tag_fim,MPI_COMM_WORLD);
     }
     
     MPI_Finalize();
