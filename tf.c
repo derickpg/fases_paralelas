@@ -6,7 +6,7 @@
 
 main(int argc, char** argv) {
         
-    int tam_vet = 100;   /* Tamanho TOTAL do VETOR  ---- Multiplo da quantidade de processos <- LEMBRAR ! */
+    int tam_vet = 1000000;   /* Tamanho TOTAL do VETOR  ---- Multiplo da quantidade de processos <- LEMBRAR ! */
     int debug = 1;
 
 
@@ -69,7 +69,7 @@ main(int argc, char** argv) {
     ini_vetor = (fim_vetor+1) - tam_part;
 
     MPI_Barrier(MPI_COMM_WORLD);
-    if(debug == 1) printf("♥♥♥ pid = %d esta com array completo, seus limites sao ini= %d e fim= %d, mas pode ver todo, exemplo? 51 = %d,\n", my_rank, ini_vetor, fim_vetor, vetor[51]);
+    if(debug == 1) printf(" pid = %d esta com array completo, seus limites sao ini= %d e fim= %d, mas pode ver todo, exemplo? 51 = %d,\n", my_rank, ini_vetor, fim_vetor, vetor[51]);
 
     pronto = 0;
     
@@ -81,7 +81,8 @@ main(int argc, char** argv) {
             MPI_Recv(&recebido, 1, MPI_INT, MPI_ANY_SOURCE, MPI_ANY_TAG, MPI_COMM_WORLD, &status);
 
         if((status.MPI_TAG == tag_inicio) || (status.MPI_TAG == tag_erro && flag_acabou_de_ordenar == 0) || flag_erro_proprio == 1 || primeira_vez == 0){
-            if(debug == 1) printf("♥♥♥ DEBUG [ %d ] TAG_INICIO \n", my_rank);
+            if(debug == 1) printf(" DEBUG [ %d ] TAG_INICIO \n", my_rank);\
+            if(status.MPI_TAG == tag_erro )
             
             primeira_vez = 1;
 
@@ -103,11 +104,11 @@ main(int argc, char** argv) {
             // se não for np-1, mando o meu maior elemento para a direita
             if(my_rank < (np-1)) // Manda o último número...
                 MPI_Send(&vetor[fim_vetor],1,MPI_INT,(my_rank+1),tag_maior,MPI_COMM_WORLD);
-            if(debug == 1) printf("♥♥♥ DEBUG [ %d ] TAG_INICIO-fim \n", my_rank);
+            if(debug == 1) printf(" DEBUG [ %d ] TAG_INICIO-fim \n", my_rank);
         } else if(status.MPI_TAG == tag_erro && flag_acabou_de_ordenar == 1) {
             flag_acabou_de_ordenar = 0;
         } else if(status.MPI_TAG == tag_maior) {
-            if(debug == 1) printf("♥♥♥ DEBUG [ %d ] TAG_MAIOR \n", my_rank);
+            if(debug == 1) printf(" DEBUG [ %d ] TAG_MAIOR \n", my_rank);
             // se não for 0, recebo o maior elemento da esquerda
             // comparo se o meu menor elemento é maior do que o maior elemento recebido (se sim, estou ordenado em relação ao meu vizinho)
             // compartilho o meu estado com todos os processos
@@ -132,9 +133,9 @@ main(int argc, char** argv) {
                 }
                 sleep(1);
             }
-            if(debug == 1) printf("♥♥♥ DEBUG [ %d ] TAG_MAIOR-fim \n", my_rank);
+            if(debug == 1) printf(" DEBUG [ %d ] TAG_MAIOR-fim \n", my_rank);
         }else if(status.MPI_TAG == tag_feedback){
-            if(debug == 1) printf("♥♥♥ DEBUG [ %d ] TAG_FEEDBACK \n", my_rank);
+            if(debug == 1) printf(" DEBUG [ %d ] TAG_FEEDBACK \n", my_rank);
             if(recebido == 1) positv++;
             else negatv++;
 
@@ -165,10 +166,10 @@ main(int argc, char** argv) {
                         }
                         // Avisa o vizinho que ele tem que ordenar novamente por que deu erro
                         int feedb = 1;
-                        printf("♥♥♥ DEBUG p= %d alertou para %d reordenar  \n", my_rank, (my_rank-1));
+                        if(debug == 1) printf(" DEBUG p= %d alertou para %d reordenar  \n", my_rank, (my_rank-1));
                         MPI_Send(&feedb,1,MPI_INT,(my_rank-1), tag_erro, MPI_COMM_WORLD);
                         flag_erro_proprio = 1;
-                        printf("♥♥♥ DEBUG p= %d alertou!!!!  \n", my_rank);
+                        if(debug == 1) printf(" DEBUG p= %d alertou!!!!  \n", my_rank);
                     }
                 }else{
                     // tudo certo pode terminar!
@@ -182,21 +183,9 @@ main(int argc, char** argv) {
                 }
                 positv = 0, negatv = 0;
             }
-            if(debug == 1) printf("♥♥♥ DEBUG [ %d ] TAG_FEEDBACK-fim \n", my_rank);
+            if(debug == 1) printf(" DEBUG [ %d ] TAG_FEEDBACK-fim \n", my_rank);
         }
         
-      
-
-   // troco valores para convergir
-
-      // se não for o 0, mando os menores valores do meu vetor para a esquerda
-      // se não for np-1, recebo os menores valores da direita
-
-         // ordeno estes valores com a parte mais alta do meu vetor local
-
-         // devolvo os valores que recebi para a direita
-
-      // se não for o 0, recebo de volta os maiores valores da esquerda
     }
       
 
