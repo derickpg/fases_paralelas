@@ -5,7 +5,7 @@
 
 main(int argc, char** argv) {
         
-    int tam_vet = 10000;   /* Tamanho TOTAL do VETOR  ---- Multiplo da quantidade de processos <- LEMBRAR ! */
+    int tam_vet = 100;   /* Tamanho TOTAL do VETOR  ---- Multiplo da quantidade de processos <- LEMBRAR ! */
     int debug = 1;
 
 
@@ -93,6 +93,11 @@ main(int argc, char** argv) {
             }
             // verifico condição de parada ???
 
+            printf("\n\n\n processo %d printando? ", my_rank);
+            for (i = ini_vetor; i <= fim_vetor; i++)
+                printf(" %d,", vetor[i]);
+            
+
             // se não for np-1, mando o meu maior elemento para a direita
             if(my_rank < (np-1)) // Manda o último número...
                 MPI_Send(&vetor[fim_vetor],1,MPI_INT,(my_rank+1),tag_maior,MPI_COMM_WORLD);
@@ -106,7 +111,7 @@ main(int argc, char** argv) {
             // se todos estiverem ordenados com seus vizinhos, a ordenação do vetor global está pronta ( pronto = TRUE, break)
             if(my_rank > 0){   
                 //flag_erro = 0;
-                printf("♥♥♥ DEBUG recebido %d menor que %d ? \n", recebido, ini_vetor);
+                printf("♥♥♥ DEBUG [ %d ] ??? recebido %d menor que %d ? \n", my_rank, recebido, vetor[ini_vetor]);
                 if(recebido < vetor[ini_vetor]) {
                     // Está ordenado com o da esquerda, manda broadcast positivo
                     //MPI_Bcast(1, 1, MPI_INT, tag_feedback, MPI_COMM_WORLD);
