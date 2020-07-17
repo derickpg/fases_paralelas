@@ -24,8 +24,8 @@ void bs(int n, int * vetor)
 main(int argc, char** argv)
   {
   /* Parametros */    
-  int pedaco_troca  =  2;     // 1/% do pedaco que deve ser trocado com o vizinho
-  int tam_vet       =  2000;    // Tamanho total do Vetor a ser Ordenado
+  int pedaco_troca  =  5;        // 1/% do pedaco que deve ser trocado com o vizinho
+  int tam_vet       =  10000;    // Tamanho total do Vetor a ser Ordenado
 
   /* Variaveis */
   int my_rank;          // Identificador deste processo
@@ -84,13 +84,15 @@ main(int argc, char** argv)
         bs(tam_vet_pedaco,vet_aux);
         troca[my_rank] = 0;                           // Informa que a troca nao e necessaria
 
-        /* print  VETOR ordenado do PROCESSO */
-        printf(" \n BS PID : %d = ", my_rank);
-        for(i = 0; i < tam_vet_pedaco; i++){
-            printf(" %d, ", vet_aux[i]); 
+        /* print  VETOR ordenado do PROCESSO 
+        if(my_rank == 0) {
+            printf(" \n BS PID : %d = ", my_rank);
+            for(i = 0; i < tam_vet_pedaco; i++){
+                printf(" %d, ", vet_aux[i]); 
+            }
+            printf(" \n");
         }
-        printf(" \n");
-        /*fim print*/
+        fim print*/
 
         if(my_rank != (np-1))                         // Se eu nao for o ultimo eu mando para meu vizinho da direita
             MPI_Send(&vet_aux[tam_vet_pedaco - 1], 1, MPI_INT, (my_rank+1), 1, MPI_COMM_WORLD); 
@@ -98,9 +100,9 @@ main(int argc, char** argv)
             MPI_Recv(&ultimo, 1, MPI_INT, (my_rank -1), MPI_ANY_TAG, MPI_COMM_WORLD, &status);
             if(ultimo > vet_aux[0]){ // Precisa trocar
                 troca[my_rank] = 1;
-                printf("\n Sou o PID %d e o ult é [%d] > {%d} primeiro e troca = %d  ",my_rank ,ultimo, vet_aux[0], troca[my_rank]);
+                //printf("\n Sou o PID %d e o ult é [%d] > {%d} primeiro e troca = %d  ",my_rank ,ultimo, vet_aux[0], troca[my_rank]);
             }else{         
-                printf("\n Sou o PID %d e o ult é [%d] > {%d} primeiro e troca = %d  ",my_rank ,ultimo, vet_aux[0], troca[my_rank]); // Nao precisa Trocar
+                //printf("\n Sou o PID %d e o ult é [%d] > {%d} primeiro e troca = %d  ",my_rank ,ultimo, vet_aux[0], troca[my_rank]); // Nao precisa Trocar
                 troca[my_rank] = 0;
             }
         }
@@ -128,7 +130,7 @@ main(int argc, char** argv)
         /* Processo de Troca */
 
         if(troca[my_rank] == 1 && my_rank > 0){
-            printf(" \n DEBUG Proc1 Troca Pid: %d : ", my_rank);
+            //printf(" \n DEBUG Proc1 Troca Pid: %d : ", my_rank);
             for(i = 0; i < (tam_vet_pedaco/pedaco_troca);i++){
                 aux[i] = vet_aux[i];
             }
@@ -139,40 +141,40 @@ main(int argc, char** argv)
             }
             /* DEBUG VETOR FINAL do PROCESSO */
             //printf(" \n DEBUG TROCOU Pid: %d : ", my_rank);
-            for(i = 0; i < tam_vet_pedaco; i++){
+            /*for(i = 0; i < tam_vet_pedaco; i++){
                 printf(" %d, ", vet_aux[i]);
             }
-            printf(" \n");
+            printf(" \n");*/
         }
 
         if(troca[my_rank + 1] == 1 && my_rank < (np-1)){
-            printf(" \n DEBUG Proc2 Troca Pid: %d : ", my_rank);
+            //printf(" \n DEBUG Proc2 Troca Pid: %d : ", my_rank);
             MPI_Recv(&aux, (tam_vet_pedaco/pedaco_troca), MPI_INT, (my_rank+1), MPI_ANY_TAG, MPI_COMM_WORLD, &status);
             k = 0;
-            for(i = (tam_vet_pedaco/pedaco_troca); i < tam_vet_pedaco;i++){
+            for(i = tam_vet_pedaco - (tam_vet_pedaco/pedaco_troca); i < tam_vet_pedaco;i++){
                 aux1[k] = vet_aux[i];
                 k++;
             }
             k = 0;
-            for(i = (tam_vet_pedaco/pedaco_troca); i < tam_vet_pedaco;i++){
+            for(i = tam_vet_pedaco - (tam_vet_pedaco/pedaco_troca); i < tam_vet_pedaco;i++){
                 vet_aux[i] = aux[k];
                 k++;
             }
             MPI_Send(&aux1, (tam_vet_pedaco/pedaco_troca), MPI_INT, (my_rank+1), 1, MPI_COMM_WORLD); 
         }
 
-        
-        //ordenado = 1;
     } // Fim While
      
   // processo mensagem
 
   /* DEBUG VETOR FINAL do PROCESSO */
-  printf(" \n VETOR FINAL Pid: %d : ", my_rank);
-  for(i = 0; i < tam_vet_pedaco; i++){
-      printf(" %d, ", vet_aux[i]); 
+  if(my_rank == 0) {
+    printf(" \n VETOR FINAL Pid: %d : ", my_rank);
+    for(i = 0; i < tam_vet_pedaco; i++){
+        printf(" %d, ", vet_aux[i]); 
+    }
+    printf(" \n");
   }
-  printf(" \n");
 
   MPI_Finalize();
 }
